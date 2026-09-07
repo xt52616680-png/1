@@ -1,0 +1,87 @@
+// =============================================================
+//  Prisma Schema - LOCAL DEVELOPMENT ONLY (SQLite)
+//  Production (Vercel) uses schema.prisma with PostgreSQL.
+//
+//  Usage:
+//    npx prisma db push --schema prisma/schema.sqlite.prisma
+//    npx prisma generate --schema prisma/schema.sqlite.prisma
+//  DATABASE_URL_SQLITE example: file:./db/custom.db
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL_SQLITE")
+}
+
+model ActivationCode {
+  id            String   @id @default(cuid())
+  codeId        String   @unique
+  fullCode      String   @unique
+  cardType      String
+  durationDays  Int
+  issuedAt      DateTime @default(now())
+  expiresAt     DateTime
+  maxMachines   Int      @default(1)
+  signature     String
+  nonce         String
+  status        String   @default("unused")
+  note          String?
+  createdAt     DateTime @default(now())
+  activations   Activation[]
+
+  @@index([cardType])
+  @@index([status])
+}
+
+model Machine {
+  id              String   @id @default(cuid())
+  fingerprintHash String   @unique
+  componentsEnc   String
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  activations     Activation[]
+  callbacks       CallbackLog[]
+
+  @@index([lastSeenAt])
+}
+
+model Activation {
+  id             String   @id @default(cuid())
+  codeId         String
+  machineId      String
+  activatedAt    DateTime @default(now())
+  expiresAt      DateTime
+  lastCallbackAt DateTime?
+  lastIp         String?
+  lastUserAgent  String?
+  status         String   @default("active")
+  remainingDays  Int
+  code           ActivationCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  machine        Machine       @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  callbacks      CallbackLog[]
+
+  @@unique([codeId, machineId])
+  @@index([status])
+  @@index([lastCallbackAt])
+}
+
+model CallbackLog {
+  id            String   @id @default(cuid())
+  activationId  String
+  machineId     String?
+  ip            String
+  userAgent     String?
+  calledAt      DateTime @default(now())
+  remainingDays Int
+  status        String
+  notes         String?
+  activation    Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  machine       Machine?   @relation(fields: [machineId], references: [id])
+
+  @@index([activationId])
+  @@index([calledAt])
+}

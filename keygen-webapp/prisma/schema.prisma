@@ -1,0 +1,92 @@
+// =============================================================
+//  Activation License System - Prisma Schema (PRODUCTION)
+//  Provider: PostgreSQL  (Vercel Postgres / Supabase / Neon ...)
+//
+//  Why not SQLite? Vercel serverless functions have an ephemeral,
+//  mostly read-only filesystem - a local .db file loses all data.
+//  For local development use schema.sqlite.prisma instead:
+//    npx prisma db push --schema prisma/schema.sqlite.prisma
+//    npx prisma generate --schema prisma/schema.sqlite.prisma
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ActivationCode {
+  id            String   @id @default(cuid())
+  // Short code id embedded in the activation string (e.g. "AB12CD34")
+  codeId        String   @unique
+  // Full activation code (payload.signature, base64)
+  fullCode      String   @unique
+  cardType      String   // month | season | year | time
+  durationDays  Int      // enforced duration
+  issuedAt      DateTime @default(now())
+  expiresAt     DateTime // issuedAt + durationDays
+  maxMachines   Int      @default(1)
+  // Ed25519 signature (hex)
+  signature     String
+  nonce         String   // random 16-byte hex
+  status        String   @default("unused") // unused | active | expired | revoked
+  note          String?
+  createdAt     DateTime @default(now())
+  activations   Activation[]
+
+  @@index([cardType])
+  @@index([status])
+}
+
+model Machine {
+  id              String   @id @default(cuid())
+  fingerprintHash String   @unique // SHA-256 of CPU+MB+Disk+MAC components
+  // Encrypted components JSON (AES-GCM)
+  componentsEnc   String
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  activations     Activation[]
+  callbacks       CallbackLog[]
+
+  @@index([lastSeenAt])
+}
+
+model Activation {
+  id             String   @id @default(cuid())
+  codeId         String
+  machineId      String
+  activatedAt    DateTime @default(now())
+  expiresAt      DateTime
+  lastCallbackAt DateTime?
+  lastIp         String?
+  lastUserAgent  String?
+  status         String   @default("active") // active | expired | revoked
+  remainingDays  Int      // cached, updated on each callback
+  code           ActivationCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  machine        Machine       @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  callbacks      CallbackLog[]
+
+  @@unique([codeId, machineId])
+  @@index([status])
+  @@index([lastCallbackAt])
+}
+
+model CallbackLog {
+  id            String   @id @default(cuid())
+  activationId  String
+  machineId     String?
+  ip            String
+  userAgent     String?
+  calledAt      DateTime @default(now())
+  remainingDays Int
+  status        String   // ok | expired | revoked | mismatch
+  notes         String?
+  activation    Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  machine       Machine?   @relation(fields: [machineId], references: [id])
+
+  @@index([activationId])
+  @@index([calledAt])
+}
