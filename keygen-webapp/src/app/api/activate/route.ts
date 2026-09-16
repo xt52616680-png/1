@@ -141,6 +141,19 @@ export async function POST(req: NextRequest) {
       where: { codeId_machineId: { codeId: code.id, machineId: machine.id } },
     });
     if (existing) {
+      // Admin-controlled statuses must not be reset by re-activation.
+      if (existing.status === 'revoked') {
+        return NextResponse.json(
+          { status: 'rejected', message: 'this device has been revoked by admin' },
+          { status: 403 }
+        );
+      }
+      if (existing.status === 'paused') {
+        return NextResponse.json(
+          { status: 'rejected', message: 'this device is paused by admin' },
+          { status: 403 }
+        );
+      }
       // Re-activation: allow if still valid
       const remaining = remainingDays(existing.expiresAt, now);
       await db.activation.update({

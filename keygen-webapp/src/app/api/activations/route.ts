@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
       // ceil so a license with hours left still shows 1 day, not 0.
       const realRemaining = remainingDays(a.expiresAt, new Date(now));
       const realStatus = a.status === 'revoked' ? 'revoked'
+                        : a.status === 'paused' ? 'paused'
                         : now >= a.expiresAt.getTime() ? 'expired' : 'active';
       return {
         id: a.id,

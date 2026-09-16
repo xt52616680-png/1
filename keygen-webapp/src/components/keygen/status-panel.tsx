@@ -38,12 +38,14 @@ const CARD_LABELS: Record<string, string> = {
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
+  paused: "outline",
   expired: "secondary",
   revoked: "destructive",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   active: "激活中",
+  paused: "已暂停",
   expired: "已过期",
   revoked: "已吊销",
 };
@@ -86,6 +88,30 @@ export function StatusPanel() {
     };
   }, [fetchData]);
 
+  const manageDevice = async (id: string, action: "pause" | "resume" | "revoke") => {
+    if (action === "revoke" &&
+        !window.confirm("确认吊销该设备？吊销后该机器的软件将在下次回调时停止运行，且无法恢复（只能重新激活）。")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/activations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ action }),
+      });
+      if (res.status === 401 || res.status === 503) {
+        toast.error("管理接口未授权：请先到「设置」页配置管理密钥（LICENSE_ADMIN_KEY）");
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "操作失败");
+      toast.success(action === "revoke" ? "已吊销该设备" : action === "pause" ? "已暂停该设备" : "已恢复该设备");
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || "操作失败");
+    }
+  };
+
   const filtered = activations.filter(a => {
     if (!search) return true;
     const s = search.toLowerCase();
@@ -116,6 +142,7 @@ export function StatusPanel() {
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="active">激活中</SelectItem>
+                <SelectItem value="paused">已暂停</SelectItem>
                 <SelectItem value="expired">已过期</SelectItem>
                 <SelectItem value="revoked">已吊销</SelectItem>
               </SelectContent>
@@ -175,18 +202,21 @@ export function StatusPanel() {
                 <TableHead className="text-xs uppercase tracking-wider text-slate-400">
                   状态
                 </TableHead>
+                <TableHead className="text-xs uppercase tracking-wider text-slate-400">
+                  操作
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {error ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-amber-400 py-12 text-sm">
+                  <TableCell colSpan={8} className="text-center text-amber-400 py-12 text-sm">
                     {error}
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-slate-500 py-12">
+                  <TableCell colSpan={8} className="text-center text-slate-500 py-12">
                     {loading ? "加载中..." : "暂无激活记录"}
                   </TableCell>
                 </TableRow>
@@ -251,6 +281,53 @@ export function StatusPanel() {
                       <Badge variant={STATUS_VARIANT[a.status] || "outline"}>
                         {STATUS_LABEL[a.status] || a.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {a.status === "active" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => manageDevice(a.id, "pause")}
+                              className="h-7 px-2 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                            >
+                              暂停
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => manageDevice(a.id, "revoke")}
+                              className="h-7 px-2 text-xs border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                            >
+                              吊销
+                            </Button>
+                          </>
+                        )}
+                        {a.status === "paused" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => manageDevice(a.id, "resume")}
+                              className="h-7 px-2 text-xs border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                            >
+                              恢复
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => manageDevice(a.id, "revoke")}
+                              className="h-7 px-2 text-xs border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                            >
+                              吊销
+                            </Button>
+                          </>
+                        )}
+                        {(a.status === "revoked" || a.status === "expired") && (
+                          <span className="text-xs text-slate-600">—</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

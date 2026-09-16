@@ -70,6 +70,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Admin-controlled device statuses take precedence over everything else.
+    if (activation.status === 'revoked' || activation.status === 'paused') {
+      return NextResponse.json({
+        status: 'revoked', server_time: Math.floor(Date.now()/1000),
+        remaining_days: 0, next_callback_in: 3600,
+        message: activation.status === 'paused'
+          ? 'device paused by admin'
+          : 'device revoked by admin',
+      });
+    }
+
     // Check status
     if (code.status === 'revoked') {
       return NextResponse.json({
