@@ -68,6 +68,12 @@ class LicenseConfig:
     # Max acceptable clock skew (seconds) when verifying issued/expires
     max_clock_skew: int = 24 * 3600  # 24 hours
 
+    # Require the keygen backend to be reachable during activation.
+    # False (default) = demos can activate offline when keygen is unreachable
+    # (WARNING: this bypasses max-machines enforcement on the server).
+    # Set True for production builds shipped to customers.
+    require_keygen_online: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Result types
@@ -437,6 +443,8 @@ class LicenseVerifier:
                 else:
                     return False, data.get("message", "registration rejected")
         except Exception as e:
-            # Offline mode: allow activation without keygen (less secure)
-            # In production you may want to refuse activation if keygen is unreachable.
+            if self.config.require_keygen_online:
+                return False, f"keygen unreachable: {e}"
+            # Offline mode: allow activation without keygen (less secure).
+            # In production set require_keygen_online=True to refuse.
             return True, f"keygen unreachable, activated offline: {e}"
