@@ -47,7 +47,7 @@ except ImportError as exc:  # pragma: no cover
 # Constants
 # ---------------------------------------------------------------------------
 
-ED25519_PUBKEY_B64 = "ZnieBCUPW3IakEwVUf3aiH_cZuUT9wXvkzfyHz_CPMU"
+ED25519_PUBKEY_B64 = "2XsbIGcuEdr7tBwGGDeJLV4Sm773cAQqd8DkpXuZ8Ug"
 ED25519_PRIVKEY_B64_ENV = "LICENSE_ED25519_PRIVATE_KEY_B64"  # only set in keygen
 
 # A non-secret per-release salt mixed into hardware fingerprints.
