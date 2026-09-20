@@ -11,15 +11,15 @@ export type CardType = 'month' | 'season' | 'year' | 'time';
  * Default duration per card type.
  *
  * Per user spec:
- *   month  = 30 days (forced)
- *   season = 30 days (forced) [NOTE: change to 90 if needed]
- *   year   = 30 days (forced) [NOTE: change to 365 if needed]
+ *   month  = 30 days
+ *   season = 90 days
+ *   year   = 365 days
  *   time   = custom (input field, 1-3650 days)
  */
 export const CARD_DEFAULT_DURATIONS: Record<CardType, number> = {
   month: 30,
-  season: 30,
-  year: 30,
+  season: 90,
+  year: 365,
   time: 0,
 };
 
@@ -31,9 +31,9 @@ export const CARD_LABELS: Record<CardType, string> = {
 };
 
 export const CARD_DESCRIPTIONS: Record<CardType, string> = {
-  month: '月卡 · 强制 30 天',
-  season: '季卡 · 强制 30 天',
-  year: '年卡 · 强制 30 天',
+  month: '月卡 · 30 天',
+  season: '季卡 · 90 天',
+  year: '年卡 · 365 天',
   time: '时卡 · 自定义天数',
 };
 
