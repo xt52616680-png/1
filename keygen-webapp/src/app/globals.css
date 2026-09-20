@@ -120,3 +120,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 暗色主题原生控件（日期选择器等）适配 */
+:root {
+  color-scheme: dark;
+}

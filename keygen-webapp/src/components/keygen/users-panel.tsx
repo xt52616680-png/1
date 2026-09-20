@@ -84,6 +84,14 @@ export function UsersPanel() {
       toast.error("请填写邮箱和初始密码");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(newEmail)) {
+      toast.error("邮箱格式无效");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("初始密码至少 8 位");
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch("/api/auth/users", {
@@ -91,15 +99,17 @@ export function UsersPanel() {
         headers: { "Content-Type": "application/json", "x-admin-key": getAdminKey() },
         body: JSON.stringify({ email: newEmail, password: newPassword, plan: newPlan, maxMachines: Number(newMachines) || 1 }),
       });
-      const j = await res.json();
-      if (j.ok) {
+      const j = await res.json().catch(() => null);
+      if (j?.ok) {
         toast.success(`已创建：${newEmail}`);
         setNewEmail("");
         setNewPassword("");
         await load();
       } else {
-        toast.error(j.message || "创建失败");
+        toast.error(j?.message || `创建失败（HTTP ${res.status}）`);
       }
+    } catch (e) {
+      toast.error(`网络异常：${String(e).slice(0, 80)}`);
     } finally {
       setCreating(false);
     }
