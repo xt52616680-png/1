@@ -50,8 +50,17 @@ model Machine {
   lastSeenAt      DateTime @default(now())
   activations     Activation[]
   callbacks       CallbackLog[]
+  // Account-based licensing (P1)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  machineName     String?          // friendly device name
+  tokenVersion    Int      @default(1) // bump to invalidate outstanding tokens
+  rebindCount     Int      @default(0) // monthly rebind counter
+  lastBindAt      DateTime?
+  lastIp          String?
 
   @@index([lastSeenAt])
+  @@index([userId])
 }
 
 model Activation {
@@ -89,4 +98,46 @@ model CallbackLog {
 
   @@index([activationId])
   @@index([calledAt])
+}
+
+// =============================================================
+//  Account-based licensing (P1): registered users + machine
+//  binding + short-lived Ed25519 session tokens.
+// =============================================================
+
+enum UserPlan {
+  TRIAL
+  STANDARD
+  PRO
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String              // scrypt$N$salt$hash (node:crypto)
+  plan          UserPlan   @default(TRIAL)
+  planExpiresAt DateTime?
+  maxMachines   Int        @default(1)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  machines      Machine[]
+  auditLogs     AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // register | login_ok | login_fail | heartbeat | unbind | deploy_download | crack_suspect | rate_limited
+  ip        String?
+  meta      String?  // JSON blob (fingerprint, ua, reason...)
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([ip, createdAt])
 }
