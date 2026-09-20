@@ -66,7 +66,14 @@ export async function POST(req: NextRequest) {
   }
 
   const planExpired = user.planExpiresAt ? user.planExpiresAt.getTime() < Date.now() : false;
-  const plan = planExpired ? 'EXPIRED' : user.plan;
+  if (planExpired) {
+    // 订阅到期 → 不再续发令牌（旧令牌 24h 内自然过期后锁定，相当于 24h 宽限）
+    return NextResponse.json(
+      { ok: false, code: 'PLAN_EXPIRED', message: '订阅已到期，请续费后继续使用' },
+      { status: 403 },
+    );
+  }
+  const plan = user.plan;
   const { token: fresh, payload } = await signSessionToken({
     uid: user.id,
     fp: claims.fp,
