@@ -1,6 +1,7 @@
 // E2E 测试套件：注册/登录/心跳/换绑/错误路径（本地 keygen_dev 库）
 // 用法: node scripts/e2e-auth.mjs [baseUrl]
 import http from 'node:http'
+import https from 'node:https'
 import { createHash } from 'node:crypto'
 
 const BASE = process.argv[2] || 'http://127.0.0.1:3210'
@@ -11,7 +12,7 @@ let fail = 0
 function req(path, body, method = 'POST') {
   return new Promise((resolve) => {
     const data = JSON.stringify(body)
-    const r = http.request(
+    const r = (BASE.startsWith("https") ? https : http).request(
       BASE + path,
       { method, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } },
       (res) => {
