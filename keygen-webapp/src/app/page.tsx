@@ -5,6 +5,7 @@ import { GeneratePanel } from "@/components/keygen/generate-panel";
 import { StatusPanel } from "@/components/keygen/status-panel";
 import { DashboardPanel } from "@/components/keygen/dashboard-panel";
 import { SettingsPanel } from "@/components/keygen/settings-panel";
+import { UsersPanel } from "@/components/keygen/users-panel";
 import { Shield, Lock } from "lucide-react";
 
 export default function HomePage() {
@@ -64,6 +65,12 @@ export default function HomePage() {
             仪表盘
           </TabsTrigger>
           <TabsTrigger
+            value="users"
+            className="data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-300 data-[state=active]:shadow-none rounded-md px-4 py-1.5 text-sm"
+          >
+            用户管理
+          </TabsTrigger>
+          <TabsTrigger
             value="settings"
             className="data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-300 data-[state=active]:shadow-none rounded-md px-4 py-1.5 text-sm"
           >
@@ -85,6 +92,10 @@ export default function HomePage() {
 
         <TabsContent value="settings" className="space-y-6 mt-0">
           <SettingsPanel />
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-6 mt-0">
+          <UsersPanel />
         </TabsContent>
       </Tabs>
 
