@@ -10,3 +10,6 @@ __pycache__/
 .next/
 db/
 *.db
+
+prisma/schema.dev.bak
+prisma/schema.local.prisma
