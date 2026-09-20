@@ -1,0 +1,12 @@
+
+# 本地敏感文件永不入库
+部署密钥-勿外传.txt
+keygen-webapp/.env
+keygen-webapp/.env.local
+keygen-webapp/.env*.local
+node_modules/
+.vercel/
+__pycache__/
+.next/
+db/
+*.db
