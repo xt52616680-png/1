@@ -20,6 +20,7 @@ import { getAdminKey } from "@/lib/admin-client";
 
 interface MachineInfo {
   id: string;
+  fingerprint: string;
   name: string | null;
   lastSeenAt: string | null;
   lastIp: string | null;
@@ -62,6 +63,21 @@ export function UsersPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const adminUnbind = async (machineId: string) => {
+    if (!confirm("确定解绑该设备？客户下次登录将自动重新绑定。")) return;
+    const res = await fetch(`/api/auth/users/machine?machineId=${machineId}`, {
+      method: "DELETE",
+      headers: { "x-admin-key": getAdminKey() },
+    });
+    const j = await res.json();
+    if (j.ok) {
+      toast.success("已解绑");
+      await load();
+    } else {
+      toast.error(j.message || "解绑失败");
+    }
+  };
 
   const createUser = async () => {
     if (!newEmail || !newPassword) {
@@ -193,9 +209,18 @@ export function UsersPanel() {
                   {u.machines.length > 0 && (
                     <div className="text-xs text-slate-500 space-y-0.5">
                       {u.machines.map((m) => (
-                        <div key={m.id}>
-                          📟 {m.name || m.id.slice(0, 8)} · 最近活跃{" "}
-                          {m.lastSeenAt ? new Date(m.lastSeenAt).toLocaleString("zh-CN") : "从未"} · IP {m.lastIp || "-"}
+                        <div key={m.id} className="flex items-center gap-2">
+                          <span>
+                            📟 {m.name || m.id.slice(0, 8)} · 机器码{" "}
+                            <code className="text-emerald-400/80">{m.fingerprint}</code> · 最近活跃{" "}
+                            {m.lastSeenAt ? new Date(m.lastSeenAt).toLocaleString("zh-CN") : "从未"} · IP {m.lastIp || "-"}
+                          </span>
+                          <button
+                            className="ml-auto text-rose-400 hover:text-rose-300 underline"
+                            onClick={() => adminUnbind(m.id)}
+                          >
+                            [解绑]
+                          </button>
                         </div>
                       ))}
                     </div>

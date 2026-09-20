@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const email = req.nextUrl.searchParams.get('email');
   const users = await db.user.findMany({
     where: email ? { email } : undefined,
-    include: { machines: { select: { id: true, machineName: true, lastSeenAt: true, lastIp: true, tokenVersion: true } } },
+    include: { machines: { select: { id: true, machineName: true, lastSeenAt: true, lastIp: true, tokenVersion: true, fingerprintHash: true } } },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
         name: m.machineName,
         lastSeenAt: m.lastSeenAt,
         lastIp: m.lastIp,
+        fingerprint: m.fingerprintHash.slice(0, 16), // 设备机器码（前 16 位展示）
       })),
     })),
   });
